@@ -18,7 +18,7 @@ else
 fi
 
 if [ ! $(getent passwd ${HOST_USER_UID}) ]; then
-  useradd --no-log-init --uid ${HOST_USER_UID} --gid ${HOST_USER_GID} -m ${USERNAME} &>/dev/null
+  useradd --no-log-init --uid ${HOST_USER_UID} --gid ${HOST_USER_GID} -m ${USERNAME} -k /root &>/dev/null
 else
   CONFLICTING_USER_NAME=`getent passwd ${HOST_USER_UID} | cut -d: -f1`
   usermod -l ${USERNAME} -u ${HOST_USER_UID} -m -d /home/${USERNAME} ${CONFLICTING_USER_NAME} &>/dev/null

@@ -202,7 +202,7 @@ print_info "Launching Isaac ROS Dev container with image key ${BASE_IMAGE_KEY}: 
 # Build image to launch
 if [[ $SKIP_IMAGE_BUILD -ne 1 ]]; then
     print_info "Building $BASE_IMAGE_KEY base as image: $BASE_NAME"
-   $ROOT/build_image_layers.sh --image_key "$BASE_IMAGE_KEY" --image_name "$BASE_NAME"
+   $ROOT/build_image_layers.sh --image_key "$BASE_IMAGE_KEY" --image_name "$BASE_NAME" --docker_arg "--build-context="rdre_cust=../../../src""
 
     # Check result
     if [ $? -ne 0 ]; then
@@ -223,7 +223,7 @@ fi
 
 # Map host's display socket to docker
 DOCKER_ARGS+=("-v /tmp/.X11-unix:/tmp/.X11-unix")
-DOCKER_ARGS+=("-v $HOME/.Xauthority:/home/admin/.Xauthority:rw")
+DOCKER_ARGS+=("-v $HOME/.Xauthority:/root/.Xauthority:rw")
 DOCKER_ARGS+=("-e DISPLAY")
 DOCKER_ARGS+=("-e NVIDIA_VISIBLE_DEVICES=all")
 DOCKER_ARGS+=("-e NVIDIA_DRIVER_CAPABILITIES=all")
@@ -233,11 +233,11 @@ DOCKER_ARGS+=("-e ISAAC_ROS_WS=/workspaces/isaac_ros-dev")
 DOCKER_ARGS+=("-e HOST_USER_UID=`id -u`")
 DOCKER_ARGS+=("-e HOST_USER_GID=`id -g`")
 
-# Forward SSH Agent to container if the ssh agent is active.
-if [[ -n $SSH_AUTH_SOCK ]]; then
-    DOCKER_ARGS+=("-v $SSH_AUTH_SOCK:/ssh-agent")
-    DOCKER_ARGS+=("-e SSH_AUTH_SOCK=/ssh-agent")
-fi
+# # Forward SSH Agent to container if the ssh agent is active.
+# if [[ -n $SSH_AUTH_SOCK ]]; then
+#     DOCKER_ARGS+=("-v $SSH_AUTH_SOCK:/ssh-agent")
+#     DOCKER_ARGS+=("-e SSH_AUTH_SOCK=/ssh-agent")
+# fi
 
 if [[ $PLATFORM == "aarch64" ]]; then
     DOCKER_ARGS+=("-e NVIDIA_VISIBLE_DEVICES=nvidia.com/gpu=all,nvidia.com/pva=all")
@@ -280,13 +280,15 @@ print_info "Running $CONTAINER_NAME"
 if [[ $VERBOSE -eq 1 ]]; then
     set -x
 fi
-docker run -it --rm \
+docker run -it \
     --privileged \
     --network host \
     --ipc=host \
+    --restart always \
     ${DOCKER_ARGS[@]} \
     -v $ISAAC_ROS_DEV_DIR:/workspaces/isaac_ros-dev \
     -v /etc/localtime:/etc/localtime:ro \
+    -v $ISAAC_ROS_DEV_DIR/src/isaac_ros_common/docker/scripts/workspace-entrypoint.sh:/usr/local/bin/scripts/workspace-entrypoint.sh:ro \
     --name "$CONTAINER_NAME" \
     --runtime nvidia \
     --entrypoint /usr/local/bin/scripts/workspace-entrypoint.sh \
